@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YIS TASK</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+  }
+  .app {
+    width: 375px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    min-height: 720px;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen { display: none; flex: 1; flex-direction: column; padding: 22px 18px; overflow-y: auto; }
+  .screen.active { display: flex; }
+
+  /* ---- ホーム画面 ---- */
+  #home { justify-content: center; align-items: center; text-align: center; gap: 40px; }
+  .app-title {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #222;
+    line-height: 1.15;
+  }
+  .home-buttons { display: flex; flex-direction: column; gap: 18px; width: 100%; }
+  .big-btn {
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 20px 0;
+    font-size: 17px;
+    font-weight: 700;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .big-btn:active { background: #eee; }
+
+  /* ---- 共通ヘッダー ---- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .header h1 { font-size: 19px; font-weight: 700; color: #222; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ---- 追加画面 ---- */
+  .field-group { margin-bottom: 18px; }
+  .field-label {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .field-input {
+    width: 100%;
+    border: 1px solid #999;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    color: #222;
+    font-family: inherit;
+    outline: none;
+  }
+  .field-input:focus { border-color: #333; }
+  .field-textarea {
+    width: 100%;
+    border: 1px solid #999;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    min-height: 90px;
+    resize: none;
+    font-family: inherit;
+    outline: none;
+  }
+  .field-textarea:focus { border-color: #333; }
+  .datetime-row { display: flex; gap: 10px; }
+  .datetime-row .field-input { flex: 1; }
+
+  .notice {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .submit-btn {
+    margin-top: auto;
+    width: 100%;
+    background: #222;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 0;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .submit-btn:active { background: #444; }
+
+  /* ---- 確認画面 ---- */
+  .task-list { display: flex; flex-direction: column; gap: 12px; }
+  .task-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 14px 14px 14px 14px;
+    position: relative;
+    cursor: pointer;
+  }
+  .task-card-inner { display: flex; align-items: flex-start; gap: 12px; }
+  .task-check {
+    width: 22px; height: 22px;
+    border: 2px solid #999;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+    cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+  }
+  .task-check.done { background: #222; border-color: #222; }
+  .task-check.done::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 4px; }
+  .task-name.done { text-decoration: line-through; color: #999; }
+  .task-due { font-size: 13px; color: #666; }
+  .task-memo { font-size: 12px; color: #888; margin-top: 4px; }
+  .task-delete {
+    width: 28px; height: 28px;
+    border: none; background: none;
+    color: #ccc; font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    transition: color .12s, background .12s;
+  }
+  .task-delete:active { color: #e33; background: #fff0f0; }
+
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .filter-tab {
+    padding: 6px 14px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fff;
+    color: #666;
+    cursor: pointer;
+    transition: all .12s;
+    font-family: inherit;
+  }
+  .filter-tab.active { background: #222; border-color: #222; color: #fff; }
+
+  .empty-msg { text-align: center; color: #999; font-size: 13px; margin-top: 40px; }
+
+  /* ---- 設定画面 ---- */
+  .settings-list { display: flex; flex-direction: column; gap: 0; }
+  .settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 4px;
+    border-bottom: 1px solid #eee;
+  }
+  .settings-label { font-size: 15px; color: #222; font-weight: 600; }
+  .settings-sub { font-size: 12px; color: #999; margin-top: 2px; }
+
+  .switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background-color: #ccc; border-radius: 26px;
+    transition: .2s;
+  }
+  .slider::before {
+    content: ""; position: absolute;
+    height: 20px; width: 20px; left: 3px; bottom: 3px;
+    background-color: white; border-radius: 50%;
+    transition: .2s;
+  }
+  .switch input:checked + .slider { background-color: #333; }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+
+  .select-input {
+    border: 1px solid #999;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #fff;
+    color: #222;
+    font-family: inherit;
+  }
+
+  /* ---- カレンダー画面 ---- */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-month-label { font-size: 17px; font-weight: 700; color: #222; }
+  .cal-arrow {
+    width: 32px; height: 32px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  .cal-weekday {
+    font-size: 12px;
+    color: #888;
+    font-weight: 700;
+    padding-bottom: 8px;
+  }
+  .cal-weekday.sun { color: #d33; }
+  .cal-weekday.sat { color: #36c; }
+  .cal-day {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    color: #222;
+    border: 1px solid #eee;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background .12s, transform .08s;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cal-day:active { background: #eee; transform: scale(0.96); }
+  .cal-day.empty { visibility: hidden; cursor: default; border: none; }
+  .cal-day.empty:active { background: none; transform: none; }
+  .cal-day.sunday { color: #d33; }
+  .cal-day.saturday { color: #36c; }
+  .cal-day.has-task { background: #f7f7f7; border-color: #ccc; }
+  .cal-day.has-task .cal-dot { display: block; }
+  .cal-dot {
+    display: none;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #333;
+  }
+  .cal-day.today { background: #222; color: #fff; border-color: #222; }
+  .cal-day.today .cal-dot { background: #fff; }
+  .cal-legend {
+    margin-top: 18px;
+    font-size: 11px;
+    color: #999;
+    display: flex;
+    gap: 14px;
+  }
+  .cal-legend span { display: flex; align-items: center; gap: 4px; }
+  .dot-legend { width: 5px; height: 5px; border-radius: 50%; background: #333; display: inline-block; }
+
+  /* ---- 日付詳細モーダル ---- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-sheet {
+    width: 100%;
+    max-width: 375px;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px 28px;
+    max-height: 75vh;
+    overflow-y: auto;
+    animation: slideUp .2s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; color: #222; }
+  .modal-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: #f2f2f2;
+    border-radius: 50%;
+    font-size: 16px;
+    color: #666;
+    cursor: pointer;
+  }
+  .modal-task-list { display: flex; flex-direction: column; gap: 10px; }
+  .modal-empty { text-align: center; color: #999; font-size: 13px; padding: 30px 0; }
+
+  /* ---- 下部ナビゲーション ---- */
+  .nav {
+    display: flex;
+    border-top: 1px solid #ddd;
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 12px 0;
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-family: inherit;
+    transition: color .12s;
+  }
+  .nav-btn.active { color: #222; font-weight: 700; }
+  .nav-btn .nav-icon { font-size: 18px; }
+
+  /* ---- トースト ---- */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #222;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+    font-family: inherit;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ① ホーム画面 -->
+  <section id="home" class="screen active">
+    <div class="app-title">YIS<br>TASK</div>
+    <div class="home-buttons">
+      <button class="big-btn" onclick="showScreen('add')">追加する</button>
+      <button class="big-btn" onclick="showScreen('confirm')">確認する</button>
+    </div>
+  </section>
+
+  <!-- ② 追加する画面 -->
+  <section id="add" class="screen">
+    <div class="header">
+      <button class="icon-btn" onclick="showScreen('home')">←</button>
+      <h1>課業を追加する</h1>
+      <button class="icon-btn" onclick="showScreen('calendar')">📅</button>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">課業名</div>
+      <input type="text" class="field-input" id="taskName" placeholder="例：英単語テスト unit4">
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">締切日 / 時間</div>
+      <div class="datetime-row">
+        <input type="date" class="field-input" id="taskDate">
+        <input type="time" class="field-input" id="taskTime">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">メモ</div>
+      <textarea class="field-textarea" id="taskMemo" placeholder="持ち物・内容など"></textarea>
+    </div>
+
+    <div class="notice">※ 設定した通知タイミングでスマホに通知が届きます</div>
+
+    <button class="submit-btn" onclick="addTask()">追加する</button>
+  </section>
+
+  <!-- ③ 確認する画面 -->
+  <section id="confirm" class="screen">
+    <div class="header">
+      <button class="icon-btn" onclick="showScreen('home')">←</button>
+      <h1>課業一覧</h1>
+      <button class="icon-btn" onclick="showScreen('calendar')">📅</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('all', this)">すべて</button>
+      <button class="filter-tab" onclick="setFilter('undone', this)">未完了</button>
+      <button class="filter-tab" onclick="setFilter('done', this)">完了済み</button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+    <div class="empty-msg" id="emptyMsg" style="display:none;">まだ課業が登録されていません</div>
+  </section>
+
+  <!-- ④ 設定画面 -->
+  <section id="settings" class="screen">
+    <div class="header">
+      <button class="icon-btn" onclick="showScreen('home')">←</button>
+      <h1>設定</h1>
+      <button class="icon-btn" onclick="showScreen('calendar')">📅</button>
+    </div>
+
+    <div class="settings-list">
+      <div class="settings-item">
+        <div>
+          <div class="settings-label">通知 ON / OFF</div>
+          <div class="settings-sub">スマホへのローカル通知</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="notifyToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div>
+          <div class="settings-label">通知タイミング</div>
+          <div class="settings-sub">締切の何日前・何時間前に通知するか</div>
+        </div>
+        <select class="select-input" id="notifyTiming">
+          <option value="10">10分前</option>
+          <option value="60" selected>1時間前</option>
+          <option value="180">3時間前</option>
+          <option value="1440">1日前</option>
+          <option value="2880">2日前</option>
+        </select>
+      </div>
+
+      <div class="settings-item">
+        <div>
+          <div class="settings-label">朝の通知時刻</div>
+          <div class="settings-sub">期限当日・前日の朝に通知</div>
+        </div>
+        <input type="time" class="field-input" id="morningTime" value="07:00"
+          style="width:100px; padding:8px 10px; font-size:14px;">
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ カレンダー画面 -->
+  <section id="calendar" class="screen">
+    <div class="header">
+      <button class="icon-btn" onclick="showScreen('home')">←</button>
+      <h1>カレンダー</h1>
+      <button class="icon-btn" onclick="showScreen('settings')">⚙️</button>
+    </div>
+
+    <div class="cal-nav">
+      <button class="cal-arrow" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month-label" id="calMonthLabel"></div>
+      <button class="cal-arrow" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="cal-legend">
+      <span><span class="dot-legend"></span>課業あり</span>
+    </div>
+  </section>
+
+  <!-- ナビゲーション -->
+  <nav class="nav">
+    <button class="nav-btn active" data-screen="home" onclick="showScreen('home')">
+      <span class="nav-icon">🏠</span>ホーム
+    </button>
+    <button class="nav-btn" data-screen="settings" onclick="showScreen('settings')">
+      <span class="nav-icon">⚙️</span>設定
+    </button>
+    <button class="nav-btn" data-screen="calendar" onclick="showScreen('calendar')">
+      <span class="nav-icon">📅</span>カレンダー
+    </button>
+  </nav>
+
+</div>
+
+<!-- 日付詳細モーダル -->
+<div class="modal-overlay" id="dayModalOverlay" onclick="closeDayModalOnOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <div class="modal-title" id="modalDateLabel"></div>
+      <button class="modal-close" onclick="closeDayModal()">✕</button>
+    </div>
+    <div class="modal-task-list" id="modalTaskList"></div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('yis_tasks') || '[]');
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+  let currentFilter = 'all';
+
+  // ── 画面切替 ──
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.screen === id);
+    });
+    if (id === 'confirm') renderTasks();
+    if (id === 'calendar') renderCalendar();
+  }
+
+  // ── タスク追加 ──
+  function addTask() {
+    const name = document.getElementById('taskName').value.trim();
+    const date = document.getElementById('taskDate').value;
+    const time = document.getElementById('taskTime').value;
+    const memo = document.getElementById('taskMemo').value.trim();
+
+    if (!name || !date) {
+      showToast('⚠️ 課業名と締切日を入力してください');
+      return;
+    }
+
+    tasks.push({ id: Date.now(), name, date, time, memo, done: false });
+    saveTasks();
+    scheduleNotification(name, date, time);
+
+    document.getElementById('taskName').value = '';
+    document.getElementById('taskDate').value = '';
+    document.getElementById('taskTime').value = '';
+    document.getElementById('taskMemo').value = '';
+
+    showToast('✅ 追加しました');
+    showScreen('confirm');
+  }
+
+  // ── タスク保存 ──
+  function saveTasks() {
+    localStorage.setItem('yis_tasks', JSON.stringify(tasks));
+  }
+
+  // ── フィルター ──
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTasks();
+  }
+
+  // ── タスク一覧描画 ──
+  function renderTasks() {
+    const list = document.getElementById('taskList');
+    const emptyMsg = document.getElementById('emptyMsg');
+    list.innerHTML = '';
+
+    let filtered = [...tasks];
+    if (currentFilter === 'undone') filtered = tasks.filter(t => !t.done);
+    if (currentFilter === 'done')   filtered = tasks.filter(t => t.done);
+
+    if (filtered.length === 0) {
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    filtered.sort((a, b) =>
+      new Date(a.date + 'T' + (a.time || '00:00')) - new Date(b.date + 'T' + (b.time || '00:00'))
+    );
+
+    filtered.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.innerHTML = `
+        <div class="task-card-inner">
+          <div class="task-check ${t.done ? 'done' : ''}" onclick="toggleDone(${t.id}, event)"></div>
+          <div class="task-body">
+            <div class="task-name ${t.done ? 'done' : ''}">${escapeHtml(t.name)}</div>
+            <div class="task-due">締切：${t.date}${t.time ? ' ' + t.time : ''}</div>
+            ${t.memo ? `<div class="task-memo">${escapeHtml(t.memo)}</div>` : ''}
+          </div>
+          <button class="task-delete" onclick="deleteTask(${t.id}, event)">×</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function toggleDone(id, e) {
+    e.stopPropagation();
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    saveTasks();
+    renderTasks();
+    showToast(t.done ? '✅ 完了にしました' : '↩️ 未完了に戻しました');
+  }
+
+  function deleteTask(id, e) {
+    e.stopPropagation();
+    if (!confirm('このタスクを削除しますか？')) return;
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    renderTasks();
+    showToast('🗑️ 削除しました');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ── 通知 ──
+  function scheduleNotification(name, date, time) {
+    if (!('Notification' in window)) return;
+    const toggle = document.getElementById('notifyToggle');
+    if (toggle && !toggle.checked) return;
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    if (!date) return;
+    const due = new Date(date + 'T' + (time || '09:00'));
+    const minutesBefore = parseInt(document.getElementById('notifyTiming')?.value || '60', 10);
+    const notifyAt = due.getTime() - minutesBefore * 60 * 1000;
+    const delay = notifyAt - Date.now();
+
+    if (delay > 0 && delay < 30 * 24 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        if (Notification.permission === 'granted') {
+          new Notification('YIS TASK', {
+            body: `「${name}」の締切が近づいています`,
+          });
+        }
+      }, delay);
+    }
+  }
+
+  // ── カレンダー ──
+  function renderCalendar() {
+    document.getElementById('calMonthLabel').textContent = `${calYear}年 ${calMonth + 1}月`;
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    [{ l:'日', c:'sun' },{ l:'月', c:'' },{ l:'火', c:'' },{ l:'水', c:'' },
+     { l:'木', c:'' },{ l:'金', c:'' },{ l:'土', c:'sat' }].forEach(w => {
+      const el = document.createElement('div');
+      el.className = 'cal-weekday ' + w.c;
+      el.textContent = w.l;
+      grid.appendChild(el);
+    });
+
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
+
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      grid.appendChild(el);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const el = document.createElement('div');
+      const wd = new Date(calYear, calMonth, d).getDay();
+      let cls = 'cal-day';
+      if (wd === 0) cls += ' sunday';
+      if (wd === 6) cls += ' saturday';
+      if (isCurrentMonth && today.getDate() === d) cls += ' today';
+
+      const hasTask = tasks.some(t => {
+        const td = new Date(t.date);
+        return td.getFullYear() === calYear && td.getMonth() === calMonth && td.getDate() === d && !t.done;
+      });
+      if (hasTask) cls += ' has-task';
+
+      el.className = cls;
+      el.innerHTML = `${d}<span class="cal-dot"></span>`;
+      el.addEventListener('click', () => openDayModal(calYear, calMonth, d));
+      grid.appendChild(el);
+    }
+  }
+
+  function changeMonth(delta) {
+    calMonth += delta;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    renderCalendar();
+  }
+
+  // ── モーダル ──
+  function openDayModal(year, month, day) {
+    const wds = ['日','月','火','水','木','金','土'];
+    const wd = new Date(year, month, day).getDay();
+    document.getElementById('modalDateLabel').textContent =
+      `${year}年${month + 1}月${day}日（${wds[wd]}）`;
+
+    const dayTasks = tasks.filter(t => {
+      const td = new Date(t.date);
+      return td.getFullYear() === year && td.getMonth() === month && td.getDate() === day;
+    });
+
+    const list = document.getElementById('modalTaskList');
+    list.innerHTML = '';
+    if (dayTasks.length === 0) {
+      list.innerHTML = '<div class="modal-empty">この日に登録された課業はありません</div>';
+    } else {
+      dayTasks.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        card.innerHTML = `
+          <div class="task-name ${t.done ? 'done' : ''}">${escapeHtml(t.name)}</div>
+          <div class="task-due">締切：${t.date}${t.time ? ' ' + t.time : ''}</div>
+          ${t.memo ? `<div class="task-memo">${escapeHtml(t.memo)}</div>` : ''}
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('dayModalOverlay').classList.add('active');
+  }
+
+  function closeDayModal() {
+    document.getElementById('dayModalOverlay').classList.remove('active');
+  }
+  function closeDayModalOnOverlay(e) {
+    if (e.target.id === 'dayModalOverlay') closeDayModal();
+  }
+
+  // ── トースト ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // 今日の日付をデフォルトにセット
+  document.getElementById('taskDate').value = new Date().toISOString().split('T')[0];
+</script>
+
+</body>
+</html>
